@@ -22,3 +22,13 @@ const (
 	RoleUser     Role = "USER"
 	RoleEmployee Role = "EMPLOYEE"
 )
+
+type Session struct {
+	SessionId    string
+	UserId       string
+	RefreshToken string
+	Device       string
+	IpAddress    string
+	ExpiryDate   string
+	CreatedAt    string
+}

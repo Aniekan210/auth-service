@@ -20,7 +20,7 @@ func Init(dataSource string) error {
 	}
 
 	// Create users table
-	createTableSQL := `
+	createTablesSQL := `
 	CREATE TABLE IF NOT EXISTS users (
 		user_id INTEGER PRIMARY KEY AUTOINCREMENT,
 		email TEXT UNIQUE NOT NULL,
@@ -30,10 +30,21 @@ func Init(dataSource string) error {
 		email_confirmation_token TEXT,
 		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		last_signed_in TIMESTAMP
-	)
+	);
+
+	CREATE TABLE IF NOT EXISTS sessions (
+		session_id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		refresh_token TEXT NOT NULL,
+		device TEXT,
+		ip_address TEXT,
+		expiry_date TIMESTAMP NOT NULL DEFAULT (datetime('now', '+7 days')),
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+	);
 	`
 
-	_, err = Conn.Exec(createTableSQL)
+	_, err = Conn.Exec(createTablesSQL)
 	if err != nil {
 		return err
 	}
@@ -72,5 +83,37 @@ func CreateUser(user *internal.User) error {
 		return err
 	}
 	user.UserId = strconv.FormatInt(id, 10)
+	return nil
+}
+
+func CreateSession(s *internal.Session) error {
+
+	_, err := Conn.Exec("INSERT INTO sessions (user_id, refresh_token, device, ip_address) VALUES (?, ?, ?, ?)", s.UserId, s.RefreshToken, s.Device, s.IpAddress)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetSession(refreshToken string) (*internal.Session, error) {
+	var s internal.Session
+
+	row := Conn.QueryRow("SELECT * FROM sessions WHERE refresh_token=?", refreshToken)
+	err := row.Scan(&s.SessionId, &s.UserId, &s.RefreshToken, &s.Device, &s.IpAddress, &s.ExpiryDate, &s.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
+func DeleteSession(refreshToken string) error {
+
+	_, err := Conn.Exec("DELETE FROM sessions WHERE refresh_token=?", refreshToken)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

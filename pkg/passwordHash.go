@@ -1,11 +1,16 @@
 package pkg
 
 import (
+	"os"
+	"strconv"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
+var hashCost, _ = strconv.Atoi(os.Getenv("HASH_COST"))
+
 func HashPassword(password string) ([]byte, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 16)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), hashCost)
 	return hashedPassword, err
 }
 

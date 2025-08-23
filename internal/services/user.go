@@ -43,3 +43,20 @@ func CreateUser(email string, password string) (*internal.User, error) {
 
 	return &newUser, nil
 }
+
+func Login(email string, unhashedPassword string) (*internal.User, error) {
+
+	// check if user exists
+	existingUser, _ := db.FindUserByEmail(email)
+	if existingUser == nil {
+		return nil, errors.New("no user, please sign up")
+	}
+
+	// compare to hashed password
+	err := pkg.ComparePasswordAndHash(unhashedPassword, existingUser.HashedPassword)
+	if err != nil {
+		return nil, errors.New("password does not match")
+	}
+
+	return existingUser, nil
+}
