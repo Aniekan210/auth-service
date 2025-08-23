@@ -20,6 +20,7 @@ func main() {
 	// open db connection
 	dbString := os.Getenv("DB_CONNECTION_STRING")
 	err = db.Init(dbString)
+
 	if err != nil {
 		panic(err)
 	}

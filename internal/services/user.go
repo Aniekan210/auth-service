@@ -3,7 +3,6 @@ package services
 import (
 	"errors"
 	"time"
-
 	"github.com/google/uuid"
 
 	"github.com/Aniekan210/auth-service/internal"
