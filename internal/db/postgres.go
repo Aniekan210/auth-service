@@ -73,7 +73,7 @@ func FindUserByEmail(email string) (*internal.User, error) {
 
 func CreateUser(user *internal.User) error {
 	res, err := Conn.Exec("INSERT INTO users (email, hashed_password, role, email_confirmed, email_confirmation_token, created_at, last_signed_in) VALUES (?, ?, ?, ?, ?, ?, ?)",
-		user.Email, user.HashedPassword, user.Role, user.EmailConfirmed, user.EmailConfirmationToken, user.CreatedAt, user.LastSignedIn)
+		user.Email, string(user.HashedPassword), user.Role, user.EmailConfirmed, user.EmailConfirmationToken, user.CreatedAt, user.LastSignedIn)
 	if err != nil {
 		return err
 	}
@@ -111,6 +111,16 @@ func GetSession(refreshToken string) (*internal.Session, error) {
 func DeleteSession(refreshToken string) error {
 
 	_, err := Conn.Exec("DELETE FROM sessions WHERE refresh_token=?", refreshToken)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UpdatePassword(hashedPassword []byte, userId string) error {
+
+	_, err := Conn.Exec("UPDATE users SET hashed_password = ? WHERE userId = ?", string(hashedPassword), userId)
 	if err != nil {
 		return err
 	}

@@ -10,13 +10,14 @@ import (
 
 var accessTokenSecret = []byte(os.Getenv("ACCESS_SECRET"))
 var refreshTokenSecret = []byte(os.Getenv("REFRESH_SECRET"))
+var passwordTokenSecret = []byte(os.Getenv("PASSWORD_SECRET"))
 
 // access token generation
 func GenerateAccessToken(userID string) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour).Unix(),
-		"iat":     time.Now().Unix(),
+		"sub": userID,
+		"exp": time.Now().Add(time.Hour).Unix(),
+		"iat": time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -31,9 +32,9 @@ func ValidateAccessToken(accessToken string) (jwt.MapClaims, error) {
 // refresh token creation
 func GenerateRefreshToken(userID string) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(168 * time.Hour).Unix(),
-		"iat":     time.Now().Unix(),
+		"sub": userID,
+		"exp": time.Now().Add(168 * time.Hour).Unix(),
+		"iat": time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -43,6 +44,23 @@ func GenerateRefreshToken(userID string) (string, error) {
 // refresh token validation
 func ValidateRefreshToken(refreshToken string) (jwt.MapClaims, error) {
 	return sharedValidate(refreshToken, refreshTokenSecret)
+}
+
+// reset password token creation
+func GeneratePasswordToken(userID string) (string, error) {
+	claims := jwt.MapClaims{
+		"sub": userID,
+		"exp": time.Now().Add(10 * time.Minute).Unix(),
+		"iat": time.Now().Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(passwordTokenSecret)
+}
+
+// reset password token validation
+func ValidatePasswordToken(passwordToken string) (jwt.MapClaims, error) {
+	return sharedValidate(passwordToken, passwordTokenSecret)
 }
 
 func sharedValidate(token string, secretKey []byte) (jwt.MapClaims, error) {

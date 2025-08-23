@@ -33,5 +33,8 @@ func main() {
 	router.POST("/login", handlers.Login)
 	router.POST("/logout", handlers.Logout)
 
+	router.GET("/authenticate", handlers.Authenticate)
+	router.GET("/reauthenticate", handlers.Reauthenticate)
+
 	router.Run() // listen and serve on 0.0.0.0:8080
 }

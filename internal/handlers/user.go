@@ -75,6 +75,7 @@ func Register(c *gin.Context) {
 		"access_token":             accessToken,
 		"refresh_token":            refreshToken,
 		"email_confirmation_token": user.EmailConfirmationToken,
+		"message":                  "signup successful",
 	})
 }
 
@@ -136,6 +137,7 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
+		"message":       "login successful",
 	})
 }
 
@@ -154,7 +156,7 @@ func Logout(c *gin.Context) {
 	}
 
 	// validate refresh token
-	err = services.VerifyRefreshToken(body.Token)
+	_, err = services.VerifyRefreshToken(body.Token)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": err.Error(),
@@ -171,5 +173,102 @@ func Logout(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusOK)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "logout successful",
+	})
+}
+
+func ForgotPassword(c *gin.Context) {
+	// get email
+	type request struct {
+		Email string `json:"email" binding:"required"`
+	}
+	body := request{}
+	err := c.ShouldBindBodyWithJSON(&body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "email is required",
+		})
+		return
+	}
+
+	// validate email
+	err = services.ValidateEmail(body.Email)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// get password reset token
+	passwordResetToken, err := services.CreatePasswordResetToken(body.Email)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"password_reset_token": passwordResetToken,
+		"message":              "reset token granted",
+	})
+
+}
+
+func ResetPassword(c *gin.Context) {
+	// get request
+	type request struct {
+		NewPassword string
+		ResetToken  string
+	}
+	body := request{}
+	err := c.ShouldBindBodyWithJSON(&body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid request body",
+		})
+		return
+	}
+
+	// validate new password
+	err = services.ValidatePassword(body.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// validate reset token
+	claims, err := pkg.ValidatePasswordToken(body.ResetToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "unauthorized",
+		})
+		return
+	}
+
+	// parse claims for user id
+	userId, err := claims.GetSubject()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid token",
+		})
+		return
+	}
+
+	// change password
+	err = services.ResetPassword(body.NewPassword, userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "password reset successfully",
+	})
 }

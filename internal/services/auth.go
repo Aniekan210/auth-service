@@ -6,6 +6,7 @@ import (
 	"github.com/Aniekan210/auth-service/internal"
 	"github.com/Aniekan210/auth-service/internal/db"
 	"github.com/Aniekan210/auth-service/pkg"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func CreateRefreshToken(userId string, device string, ipAddress string) (string, error) {
@@ -32,20 +33,20 @@ func CreateRefreshToken(userId string, device string, ipAddress string) (string,
 	return token, nil
 }
 
-func VerifyRefreshToken(token string) error {
+func VerifyRefreshToken(token string) (jwt.Claims, error) {
 	// is it signed and not expired?
-	_, err := pkg.ValidateRefreshToken(token)
+	claims, err := pkg.ValidateRefreshToken(token)
 	if err != nil {
-		return errors.New("invalid token")
+		return nil, errors.New("invalid token")
 	}
 
 	// does it exist?
 	_, err = db.GetSession(token)
 	if err != nil {
-		return errors.New("token does not exist")
+		return nil, errors.New("token does not exist")
 	}
 
-	return nil
+	return claims, nil
 }
 
 func RevokeRefreshToken(token string) error {
